@@ -1,0 +1,138 @@
+{
+  "uid": "platform-engineering",
+  "title": "Platform Engineering Command Center",
+  "timezone": "browser",
+  "schemaVersion": 36,
+  "version": 1,
+  "refresh": "5s",
+  "templating": {
+    "list": [
+      {
+        "name": "namespace",
+        "type": "query",
+        "datasource": "Prometheus",
+        "query": "label_values(k8s_pod_info, namespace)",
+        "refresh": 2,
+        "includeAll": true,
+        "allValue": ".*",
+        "multi": true,
+        "hide": 0
+      },
+      {
+        "name": "pod",
+        "type": "query",
+        "datasource": "Prometheus",
+        "query": "label_values(k8s_pod_info{namespace=~\"$namespace\"}, pod)",
+        "refresh": 2,
+        "includeAll": true,
+        "allValue": ".*",
+        "multi": true,
+        "hide": 0
+      }
+    ]
+  },
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Cluster Health",
+      "id": 1,
+      "gridPos": {"x": 0, "y": 0, "w": 6, "h": 4},
+      "targets": [{"expr": "avg(k8s_cluster_health_score_by_namespace{namespace=~\"$namespace\"})"}]
+    },
+    {
+      "type": "stat",
+      "title": "Running Pods",
+      "id": 2,
+      "gridPos": {"x": 6, "y": 0, "w": 6, "h": 4},
+      "targets": [{"expr": "sum(k8s_running_pods_by_namespace{namespace=~\"$namespace\"})"}]
+    },
+    {
+      "type": "stat",
+      "title": "Failed Pods",
+      "id": 3,
+      "gridPos": {"x": 12, "y": 0, "w": 6, "h": 4},
+      "targets": [{"expr": "sum(k8s_failed_pods_by_namespace{namespace=~\"$namespace\"})"}]
+    },
+    {
+      "type": "stat",
+      "title": "API Error Rate (%)",
+      "id": 4,
+      "gridPos": {"x": 18, "y": 0, "w": 6, "h": 4},
+      "targets": [{"expr": "api_error_rate"}]
+    },
+    {
+      "type": "timeseries",
+      "title": "API p95 Latency by Endpoint",
+      "id": 5,
+      "gridPos": {"x": 0, "y": 4, "w": 24, "h": 8},
+      "targets": [{"expr": "api_p95_latency_ms"}]
+    },
+    {
+      "type": "stat",
+      "title": "Active Alerts",
+      "id": 6,
+      "gridPos": {"x": 0, "y": 12, "w": 6, "h": 4},
+      "targets": [{"expr": "alerts_total"}]
+    },
+    {
+      "type": "stat",
+      "title": "Critical Alerts",
+      "id": 7,
+      "gridPos": {"x": 6, "y": 12, "w": 6, "h": 4},
+      "targets": [{"expr": "alerts_critical"}]
+    },
+    {
+      "type": "stat",
+      "title": "Warning Alerts",
+      "id": 8,
+      "gridPos": {"x": 12, "y": 12, "w": 6, "h": 4},
+      "targets": [{"expr": "alerts_warning"}]
+    },
+    {
+      "type": "table",
+      "title": "Pods (Filtered)",
+      "id": 9,
+      "gridPos": {"x": 0, "y": 16, "w": 24, "h": 10},
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          {
+            "matcher": {"id": "byName", "options": "namespace"},
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Filter to namespace",
+                    "url": "?var-namespace=${__value.text}&var-pod=.*",
+                    "targetBlank": false
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {"id": "byName", "options": "pod"},
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Drill down to pod",
+                    "url": "?var-namespace=${__data.fields.namespace}&var-pod=${__value.text}",
+                    "targetBlank": false
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "targets": [
+        {
+          "expr": "k8s_pod_info{namespace=~\"$namespace\",pod=~\"$pod\"}"
+        }
+      ]
+    }
+  ]
+}
